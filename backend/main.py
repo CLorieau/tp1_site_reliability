@@ -1,13 +1,26 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
+from pydantic import BaseModel
 
 app = FastAPI()
 
+# CORS Configuration
+origins = [
+    "*", # Allow all for simplicity in this dev environment
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Database connection parameters
-# If running in Docker (same network), hostname is 'database'.
-# If running locally (exposed ports), hostname is 'localhost'.
-DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_HOST = os.getenv("DB_HOST", "database") # Default to docker service name
 DB_USER = os.getenv("POSTGRES_USER", "user")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 DB_NAME = os.getenv("POSTGRES_DB", "mydatabase")
@@ -17,21 +30,48 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NA
 
 engine = create_engine(DATABASE_URL)
 
+class TaskCreate(BaseModel):
+    title: str
+    description: str
+
 @app.get("/")
 def root():
     return {"status": "ok"}
 
 @app.get("/tasks")
 def get_tasks():
-    with engine.connect() as connection:
-        result = connection.execute(text("SELECT * FROM tasks"))
-        tasks = []
-        for row in result:
-            tasks.append({
-                "id": row.id,
-                "title": row.title,
-                "description": row.description,
-                "status": row.status,
-                "created_at": row.created_at
-            })
-    return tasks
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT * FROM tasks ORDER BY id DESC"))
+            tasks = []
+            for row in result:
+                tasks.append({
+                    "id": row.id,
+                    "title": row.title,
+                    "description": row.description,
+                    "status": row.status,
+                    "created_at": str(row.created_at)
+                })
+        return tasks
+    except Exception as e:
+        print(f"Error fetching tasks: {e}")
+        return []
+
+@app.post("/tasks")
+def create_task(task: TaskCreate):
+    try:
+        with engine.connect() as connection:
+            trans = connection.begin()
+            try:
+                connection.execute(
+                    text("INSERT INTO tasks (title, description, status) VALUES (:title, :description, 'pending')"),
+                    {"title": task.title, "description": task.description}
+                )
+                trans.commit()
+                return {"status": "created", "task": task.dict()}
+            except Exception as e:
+                trans.rollback()
+                raise e
+    except Exception as e:
+        print(f"Error creating task: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

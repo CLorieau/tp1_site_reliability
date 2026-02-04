@@ -6,12 +6,44 @@ services:
             POSTGRES_PASSWORD: password
             POSTGRES_DB: mydatabase
         ports:
-            - "5432:5432"
+            - "5433:5432"
         volumes:
             - db-data:/var/lib/postgresql/data
             - ./db/db.sql:/docker-entrypoint-initdb.d/init.sql
         networks:
-            - backend-network
+            - app-network
+        restart: always
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U user -d mydatabase" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    backend:
+        build:
+            context: ./backend
+        environment:
+            DB_HOST: database
+            DB_PORT: 5432
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: mydatabase
+        ports:
+            - "8000:8000"
+        depends_on:
+            database:
+                condition: service_healthy
+        networks:
+            - app-network
+        restart: always
+
+    frontend:
+        build:
+            context: ./frontend
+        ports:
+            - "3000:3000"
+        networks:
+            - app-network
         restart: always
 
 volumes:
@@ -19,5 +51,5 @@ volumes:
 
 
 networks:
-    backend-network:
+    app-network:
         driver: bridge
