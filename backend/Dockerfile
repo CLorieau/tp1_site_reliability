@@ -1,7 +1,15 @@
-FROM <image de base>
+FROM python:3.12-slim
+
 WORKDIR /app
-COPY <source_locale> <destination_conteneur>
-RUN <commande_a_executer>
-EXPOSE 8000 <a titre informatif>
-ENTRYPOINT ["Commande_fixe"]
-CMD ["python3", "app.py"] # Commande par defaut (suite de ENTRYPOINT)
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
