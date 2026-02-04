@@ -209,13 +209,40 @@
         grid-template-columns: 1fr;
       }
     }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      width: auto;
+    }
+
+    .btn-delete {
+      background-color: var(--danger);
+    }
+
+    .btn-delete:hover {
+      background-color: #dc2626;
+    }
+
+    .btn-edit {
+      background-color: var(--pending);
+    }
+
+    .btn-edit:hover {
+      background-color: #d97706;
+    }
   </style>
 </head>
 
 <body>
   <header>
-    <h1>Task Master</h1>
-    <p>Organize your life efficiently</p>
+    <h1>Gestionnaire des taches</h1>
   </header>
 
   <div class="container">
@@ -230,7 +257,11 @@
           <label>Description</label>
           <textarea id="description" rows="3" placeholder="Details sur cette tache..."></textarea>
         </div>
-        <button type="submit">Ajouter</button>
+        <div style="display: flex; gap: 1rem;">
+          <button type="submit" style="flex: 1;">Ajouter</button>
+          <button type="button" id="cancelBtn" onclick="resetForm()"
+            style="flex: 1; display:none; background-color: var(--text-gray);">Annuler</button>
+        </div>
       </form>
     </section>
 
@@ -245,12 +276,18 @@
     const API_URL = 'http://localhost:8000';
     const form = document.getElementById('taskForm');
     const list = document.getElementById('taskList');
+    const formTitle = document.querySelector('.card h2');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    let currentTasks = [];
+    let isEditing = false;
+    let editingId = null;
 
     async function fetchTasks() {
       try {
         const res = await fetch(`${API_URL}/tasks`);
-        const tasks = await res.json();
-        renderTasks(tasks);
+        currentTasks = await res.json();
+        renderTasks(currentTasks);
       } catch (err) {
         console.error(err);
         list.innerHTML = '<div style="color:var(--danger)">Error connecting to backend. Is it running?</div>';
@@ -270,8 +307,56 @@
                     <span class="status-badge status-pending">${t.status || 'pending'}</span>
                 </div>
                 <p class="product-desc">${t.description}</p>
+                <div class="actions">
+                    <button onclick="startEdit(${t.id})" class="btn-sm btn-edit">Modifier</button>
+                    <button onclick="deleteTask(${t.id})" class="btn-sm btn-delete">Supprimer</button>
+                </div>
             </div>
         `).join('');
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) return;
+
+      try {
+        const res = await fetch(`${API_URL}/tasks/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          fetchTasks();
+          // If we were editing this task, reset form
+          if (isEditing && editingId === id) resetForm();
+        } else {
+          alert('Erreur lors de la suppression');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erreur réseau');
+      }
+    }
+
+    function startEdit(id) {
+      const task = currentTasks.find(t => t.id === id);
+      if (!task) return;
+
+      document.getElementById('title').value = task.title;
+      document.getElementById('description').value = task.description;
+
+      isEditing = true;
+      editingId = id;
+
+      formTitle.textContent = "Modifier la tâche";
+      submitBtn.textContent = "Mettre à jour";
+      document.getElementById('cancelBtn').style.display = 'block';
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      form.reset();
+      isEditing = false;
+      editingId = null;
+      formTitle.textContent = "Ajouter une nouvelle tache";
+      submitBtn.textContent = "Ajouter";
+      document.getElementById('cancelBtn').style.display = 'none';
     }
 
     form.addEventListener('submit', async (e) => {
@@ -280,15 +365,24 @@
       const description = document.getElementById('description').value;
 
       try {
-        await fetch(`${API_URL}/tasks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, description })
-        });
-        form.reset();
+        if (isEditing) {
+          await fetch(`${API_URL}/tasks/${editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description })
+          });
+          resetForm();
+        } else {
+          await fetch(`${API_URL}/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, description })
+          });
+          form.reset();
+        }
         fetchTasks();
       } catch (err) {
-        alert('Failed to add task');
+        alert('Failed to save task');
       }
     });
 

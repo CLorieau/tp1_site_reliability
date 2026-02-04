@@ -2,11 +2,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     description TEXT,
-    status VARCHAR(20) DEFAULT 'pending',
+    status VARCHAR(20) DEFAULT 'en cours',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO tasks (title, description, status) VALUES 
-('Setup Database', 'Configure PostgreSQL via Docker Compose', 'pending'),
-('Develop Backend', 'Create API to manage tasks', 'pending'),
-('Develop Frontend', 'Create UI to view and add tasks', 'pending');
+('Mettre en place la base de données', 'Configurer PostgreSQL via Docker Compose', 'fait'),
+('Mettre en place le Backend', 'Créer une API pour gérer les tâches', 'en cours'),
+('Mettre en place le Frontend', 'Créer une interface utilisateur pour afficher et ajouter des tâches', 'en cours');
