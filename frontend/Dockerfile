@@ -1,7 +1,8 @@
-FROM <image de base>
+FROM alpine:latest
+RUN mkdir /app
 WORKDIR /app
-COPY <source_locale> <destination_conteneur>
-RUN <commande_a_executer>
-EXPOSE 8000 <a titre informatif>
-ENTRYPOINT ["Commande_fixe"]
-CMD ["python3", "app.py"] # Commande par defaut (suite de ENTRYPOINT)
+RUN apk add nodejs npm
+COPY . /app
+RUN npm install
+EXPOSE 3000
+CMD ["node", "app.js"]
