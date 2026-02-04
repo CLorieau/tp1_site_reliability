@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
@@ -33,6 +34,11 @@ engine = create_engine(DATABASE_URL)
 class TaskCreate(BaseModel):
     title: str
     description: str
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
 
 @app.get("/")
 def root():
@@ -74,4 +80,60 @@ def create_task(task: TaskCreate):
                 raise e
     except Exception as e:
         print(f"Error creating task: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: int, task: TaskUpdate):
+    try:
+        with engine.connect() as connection:
+            trans = connection.begin()
+            try:
+                update_data = task.dict(exclude_unset=True)
+                if not update_data:
+                    raise HTTPException(status_code=400, detail="No fields to update")
+
+                set_clause = ", ".join([f"{key} = :{key}" for key in update_data.keys()])
+                params = update_data.copy()
+                params['id'] = task_id
+
+                result = connection.execute(
+                    text(f"UPDATE tasks SET {set_clause} WHERE id = :id"),
+                    params
+                )
+                
+                if result.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Task not found")
+                
+                trans.commit()
+                return {"status": "updated", "task": update_data}
+            except Exception as e:
+                trans.rollback()
+                raise e
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error updating task: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int):
+    try:
+        with engine.connect() as connection:
+            trans = connection.begin()
+            try:
+                result = connection.execute(
+                    text("DELETE FROM tasks WHERE id = :id"),
+                    {"id": task_id}
+                )
+                if result.rowcount == 0:
+                    raise HTTPException(status_code=404, detail="Task not found")
+                trans.commit()
+                return {"status": "deleted", "id": task_id}
+            except Exception as e:
+                trans.rollback()
+                raise e
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Error deleting task: {e}")
         raise HTTPException(status_code=500, detail=str(e))
