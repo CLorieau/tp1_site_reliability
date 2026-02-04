@@ -1,16 +1,21 @@
-version: "3.9"
 services:
-    <nom_service>:
-        image: image_du_conteneur
-        build: # si Dockerfile 
-            context:  # indiquer le contexte
-            dockerfile: Dockerfile
-        volumes: # liste de volumes (mappage)
-        ports: # liste de ports (mappage)
-        networks: liste des reseaux  
+    database:
+        image: postgres:alpine
+        environment:
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: mydatabase
+        volumes:
+            - db-data:/var/lib/postgresql/data
+            - ./db/db.sql:/docker-entrypoint-initdb.d/init.sql
+        networks:
+            - backend-network
+        restart: always
+
 volumes:
-    <volume-1> : 
-    <volume-n> : 
+    db-data:
+
+
 networks:
-    <network-1> : 
-    <network-n> : 
+    backend-network:
+        driver: bridge
