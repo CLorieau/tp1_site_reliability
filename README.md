@@ -26,3 +26,16 @@ Une fois les services démarrés, vous pouvez accéder à :
 - **La documentation de l'API (Backend)** :
   [http://localhost:8000/docs](http://localhost:8000/docs)
   (Interface Swagger UI interactive pour tester les endpoints)
+
+## Docker Hub
+
+Les images Docker de ce projet sont disponibles sur Docker Hub :
+
+- **Backend** : [drashaax/tp1_site_reliability-backend](https://hub.docker.com/r/drashaax/tp1_site_reliability-backend)
+- **Frontend** : [drashaax/tp1_site_reliability-frontend](https://hub.docker.com/r/drashaax/tp1_site_reliability-frontend)
+
+Pour pousser les images sur Docker Hub :
+
+```bash
+docker compose push
+```
