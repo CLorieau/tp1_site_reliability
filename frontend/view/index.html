@@ -46,6 +46,7 @@
       font-size: 2.5rem;
       background: linear-gradient(135deg, #818cf8, #c084fc);
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 0.5rem;
     }
@@ -219,17 +220,17 @@
 
   <div class="container">
     <section class="card">
-      <h2>✨ Add New Task</h2>
+      <h2>Ajouter une nouvelle tache</h2>
       <form id="taskForm">
         <div class="form-group">
-          <label>Title</label>
+          <label>Titre</label>
           <input type="text" id="title" placeholder="e.g. Complete Site Reliability TP" required>
         </div>
         <div class="form-group">
           <label>Description</label>
-          <textarea id="description" rows="3" placeholder="Details about this task..."></textarea>
+          <textarea id="description" rows="3" placeholder="Details sur cette tache..."></textarea>
         </div>
-        <button type="submit">Add Task</button>
+        <button type="submit">Ajouter</button>
       </form>
     </section>
 
